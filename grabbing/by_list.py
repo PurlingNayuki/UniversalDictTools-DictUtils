@@ -1,7 +1,6 @@
 import csv
 from DictUtils.misc import NameUtils
 from . import grabber
-from operator import itemgetter
 from multiprocessing.dummy import Pool as ThreadPool
 import os
 from time import sleep

@@ -5,7 +5,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 import os
 from time import sleep
 
-class csvEntry:
+class by_csv:
     __entries = list()
     __auto_sha1 = False
     __url_prefix = ''

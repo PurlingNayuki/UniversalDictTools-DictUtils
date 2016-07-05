@@ -1,7 +1,8 @@
 import csv
 from DictUtils.misc import NameUtils
 from . import grabber
-from multiprocessing.dummy import Pool as ThreadPool
+from multiprocessing import Queue
+from threading import Thread, Lock
 import os
 from time import sleep
 
@@ -28,10 +29,9 @@ class by_csv:
             }
             self.__entries.append( entry )
 
-    def __download_list(self, entry_list = None, strip_filename = False):
-        if entry_list == None:
-            entry_list = self.__entries
-        for entry in entry_list:
+    def __download_entry(self, queue: Queue, strip_filename = False):
+        if not queue.empty():
+            entry = queue.get(1)
             e_dl = grabber.EntryDictDownloader(entry,
                                        url_prefix=self.__url_prefix,
                                        file_ext=self.__file_ext,)
@@ -42,10 +42,10 @@ class by_csv:
         print( 'Soring list...' )
         self.__entries.sort(key=lambda entry: entry['id'].lower())
 
+        queued = Queue()
         # resume from break point
         if resume:
             skip_count = 0
-            queued = list()
             for entry in self.__entries:
                 if strip_filename:
                     fn = self.__file_prefix + NameUtils.strip_filename( entry['id'] ) + self.__file_ext
@@ -55,45 +55,25 @@ class by_csv:
                     # print( 'Skipping ' + entry['id'] + ' (' + fn + ') ...' )
                     skip_count += 1
                 else:
-                    queued.append( entry )
+                    queued.put( entry )
             print( 'Determining files to download...' )
             print( 'Skipped ' + str(skip_count) + ', ', end='' )
-            self.__entries = queued
+        else:
+            for entry in self.__entries:
+                queued.put( entry )
 
-        if len(self.__entries) <= 0:
-            print('Nothing to download.')
+        if queued.empty():
+            print( 'Nothing to be downloaded.' )
         else:
             print( str(len(self.__entries)) + ' to be downloaded...' )
-            if thread > len(self.__entries):
-                thread = len(self.__entries)
-            if thread == 1:
-                self.__download_list()
-            else:
-                # split the list
-                entries_list = list()
-                width = int(len(self.__entries) / thread)
-                i = 0
-                while i + width < len( self.__entries ):
-                    entries_list.append(self.__entries[i: i + width])
-                    i += width
-                if i < len( self.__entries ):
-                    entries_list.append(self.__entries[i: len( self.__entries ) - 1])
 
-                # Let's go multi-thread!
-                pool = ThreadPool( thread )
-                pool.map(self.__download_list, entries_list)
+        # Let's go multi-thread!
+        pool = list()
+        args = [queued, strip_filename]
+        for i in range(0, thread):
+            t = Thread(target=self.__download_entry, args=args)
+            pool.append( t )
 
-            for entry in self.__entries:
-                unfinished = list()
-                if strip_filename:
-                    fn = self.__file_prefix + NameUtils.strip_filename( entry['id'] ) + self.__file_ext
-                else:
-                    fn = self.__file_prefix + entry['id'] + self.__file_ext
-                if not os.path.exists( fn ):
-                    unfinished.append( entry )
-
-                if len(unfinished) > 0:
-                    # exit(1)
-                    self.__entries = unfinished
-                    sleep( 20 )
-                    self.download_all(resume=True, thread=thread, strip_filename=strip_filename)
+        # wait the threads
+        for t in pool:
+            t.join()

@@ -2,7 +2,8 @@ import hashlib
 import os
 from urllib.request import urlopen
 import urllib.error
-from DictUtils.misc import NameUtils, ColoredDisplay
+from DictUtils.misc import NameUtils
+import logging
 
 class EntryDictDownloader:
     __entry = {}
@@ -16,7 +17,7 @@ class EntryDictDownloader:
         self.__file_ext = file_ext
 
     def download(self, *, prefix = '', gen_sha1 = False, strip_filename = False):
-        print( ColoredDisplay.blue('[i] ') + 'Downloading \"' + self.__entry['hw'] + '\" (' + self.__entry['id'] + ')...')
+        logging.info('Downloading \"' + self.__entry['hw'] + '\" (' + self.__entry['id'] + ')...')
         if strip_filename:
             self.__fn = NameUtils.strip_filename( self.__entry['id'] )
         else:
@@ -42,7 +43,7 @@ class EntryDictDownloader:
 
             # After finished downloading, mark them as downloaded
             os.rename(self.__fn + '.downloading', self.__fn + self.__file_ext)
-            print( ColoredDisplay.green('[i] ') + 'Finished \"' + self.__entry['id'] + '\" => ' + self.__fn + self.__file_ext)
+            logging.info('Finished \"' + self.__entry['id'] + '\" => ' + self.__fn + self.__file_ext)
 
             # Auto generate checksum
             if gen_sha1:
@@ -51,7 +52,7 @@ class EntryDictDownloader:
                     with open(self.__fn + self.__file_ext + '.sha1.checksum', 'w') as f_chksum:
                         f_chksum.write( sha1 )
         except urllib.error.URLError as err:
-            print( ColoredDisplay.red('[w] ') + 'Failed downloading \"' + self.__entry['hw'] + '\" (' + self.__entry['id'] + '): ', end='')
+            logging.warning('Failed downloading \"' + self.__entry['hw'] + '\" (' + self.__entry['id'] + '): ', end='')
             print( err.reason )
             return False
 

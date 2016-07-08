@@ -29,13 +29,17 @@ class by_csv:
             }
             self.__entries.append( entry )
 
-    def __download_entry(self, queue: Queue, strip_filename = False):
+    def __download_entry(self, queue: Queue, failed_queue: Queue, strip_filename = False):
         if not queue.empty():
             entry = queue.get(1)
             e_dl = grabber.EntryDictDownloader(entry,
                                        url_prefix=self.__url_prefix,
                                        file_ext=self.__file_ext,)
-            e_dl.download(prefix=self.__file_prefix, gen_sha1=self.__auto_sha1, strip_filename=strip_filename)
+            download_OK = e_dl.download(prefix=self.__file_prefix,
+                                        gen_sha1=self.__auto_sha1,
+                                        strip_filename=strip_filename)
+            if not download_OK:
+                failed_queue.put(entry)
 
     def download_all(self, *, resume = True, thread = 1, strip_filename = False):
         # self.__entries = sorted( self.__entries, itemgetter('id') )
@@ -69,7 +73,8 @@ class by_csv:
 
         # Let's go multi-thread!
         pool = list()
-        args = [queued, strip_filename]
+        failed_queue = Queue()
+        args = [queued, failed_queue, strip_filename]
         for i in range(0, thread):
             t = Thread(target=self.__download_entry, args=args)
             pool.append( t )

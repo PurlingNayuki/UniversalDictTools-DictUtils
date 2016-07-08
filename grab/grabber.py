@@ -53,9 +53,6 @@ class EntryDictDownloader:
         except urllib.error.URLError as err:
             print( ColoredDisplay.red('[w] ') + 'Failed downloading \"' + self.__entry['hw'] + '\" (' + self.__entry['id'] + '): ', end='')
             print( err.reason )
-        except urllib.error.HTTPError as err:
-            print( ColoredDisplay.red('[w] ') + 'Failed downloading \"' + self.__entry['hw'] + '\" (' + self.__entry['id'] + '): ', end='')
-            print( err.reason )
 
     def get_hash(self):
         print( 'Generating SHA-1 hashcode for ' + self.__fn + self.__file_ext + ' ...')

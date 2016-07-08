@@ -41,7 +41,7 @@ class by_csv:
             if not download_OK:
                 failed_queue.put(entry)
 
-    def download_all(self, *, resume = True, thread = 1, strip_filename = False):
+    def download_all(self, *, resume = True, thread = 1, strip_filename = False, retry = 0):
         # self.__entries = sorted( self.__entries, itemgetter('id') )
         print( 'Soring list...' )
         self.__entries.sort(key=lambda entry: entry['id'].lower())
@@ -75,9 +75,17 @@ class by_csv:
         pool = list()
         failed_queue = Queue()
         args = [queued, failed_queue, strip_filename]
-        for i in range(0, thread):
-            t = Thread(target=self.__download_entry, args=args)
-            pool.append( t )
+        while retry >= 0:
+            for i in range(0, thread):
+                t = Thread(target=self.__download_entry, args=args)
+                pool.append( t )
+            if not failed_queue.empty():
+                queued = failed_queue  # set the queue to previously failed queue to retry downloading
+                failed_queue = Queue() # clear failed queue
+                if not retry == 0: # when retry set to 0, retry downloading infinitely
+                    retry -= 1
+            else:
+                break
 
         # wait the threads
         for t in pool:

@@ -1,4 +1,4 @@
-from DictUtils.Datatype import Entry, Dictionary
+from DictUtils.datatype import Entry, Dictionary
 import xml.etree.ElementTree as ElementTree
 import logging
 

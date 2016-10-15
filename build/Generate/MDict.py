@@ -1,4 +1,4 @@
-from DictUtils.Datatype import Dictionary
+from DictUtils.datatype import Dictionary
 import logging
 
 class MDictGenerator:
